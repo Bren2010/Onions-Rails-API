@@ -21,16 +21,13 @@ class AccountsController < ApplicationController
 			login = params[:account]
 			if login[:User] && login[:Pass]
 				# Params are GOOD
-				encrypted_user = Account.hashed_user(login[:User])
-				if (Account.account_exists(encrypted_user))
+				if (Account.account_exists(login[:User]))
 					# Account exists for that Email
-					if (Account.pass_is_good(login[:Pass],encrypted_user))
-						@users = Account.where(:HashedUser => encrypted_user)
+					if (Account.pass_is_good(login[:Pass],login[:User]))
+						@users = Account.where(:User => login[:User])
 						@user = @users[0]
-						sKey = Session.new_session(encrypted_user)
-						aesKey = Account.aes_key(login[:User],login[:Pass],@user.Salt)
+						sKey = Session.new_session(login[:User])
 						session[:SessionKey] = sKey
-						session[:UserKey] = aesKey
 						respond_with({:SessionKey => sKey}.as_json, :location => "/onions")
 					else
 						# User&Pass Mismatch
@@ -55,13 +52,11 @@ class AccountsController < ApplicationController
 	def login
 		if params[:User] && params[:Pass]
 			# Params are GOOD
-			encrypted_user = Account.hashed_user(params[:User])
-			if (Account.account_exists(encrypted_user))
+			if (Account.account_exists(params[:User]))
 				# Account exists for that Email
-				if (Account.pass_is_good(params[:Pass],encrypted_user))
-					salt = Account.where(:HashedUser => encrypted_user)[0].Salt
-					sKey = Session.new_session(encrypted_user)
-					respond_with({:SessionKey => sKey, :Salt => salt}.as_json, :location => nil)
+				if (Account.pass_is_good(params[:Pass],params[:User]))
+					sKey = Session.new_session(params[:User])
+					respond_with({:SessionKey => sKey}.as_json, :location => nil)
 				else
 					respond_with({:error => "Email/Password Mismatch"}.as_json, :location => nil)
 				end
@@ -78,14 +73,12 @@ class AccountsController < ApplicationController
 	def new_account
 		if (params[:User] && params[:Pass])
 			# No Account exists, make one
-			encrypted_user = Account.hashed_user(params[:User])
-			if Account.account_exists(encrypted_user)
+			if Account.account_exists(params[:User])
 				respond_with({:error => "Account already exists"}.as_json, :location => "/")
 			else
 				hashedPass = Account.new_hashed_pass(params[:Pass])
-				salt = Account.generate_salt
-				sKey = Session.new_session(encrypted_user)
-				@account = Account.create(:HashedUser => encrypted_user, :HashedPass => hashedPass, :Salt => salt)
+				sKey = Session.new_session(params[:User])
+				@account = Account.create(:User => encrypted_user, :Pass => hashedPass)
 				respond_with({:SessionKey => sKey, :Salt => salt}.as_json, :location => "/")
 			end
 		else
@@ -101,15 +94,12 @@ class AccountsController < ApplicationController
 			register = params[:register]
 			if register[:User] && register[:Pass] && register[:BetaCode]
 				if BetaKey.beta_key_is_active(register[:BetaCode])
-          encrypted_user = Account.hashed_user(register[:User])
-          if Account.account_exists(encrypted_user)
+          if Account.account_exists(register[:User])
             respond_with({:error => "Account already exists"}.as_json, :location => "/new?AccountExists=true")
           else
-            hashedPass = Account.new_hashed_pass(register[:Pass])
-            salt = Account.generate_salt
-            @account = Account.create(:HashedUser => encrypted_user, :HashedPass => hashedPass, :Salt => salt)
-            session[:SessionKey] = Session.new_session(encrypted_user)
-            session[:UserKey] = Account.aes_key(register[:User],register[:Pass],salt)
+            pass = Account.new_hashed_pass(register[:Pass])
+            @account = Account.create(:User => register[:User], :Pass => pass)
+            session[:SessionKey] = Session.new_session(register[:User])
             BetaKey.use_beta_key(register[:BetaCode])
             respond_with({:NewAccount => "Success"}.as_json, :location => "/onions")
           end
@@ -127,7 +117,6 @@ class AccountsController < ApplicationController
 
 	# LOGOUT
 	def logout
-		session[:UserKey] = nil
 		session[:SessionKey] = nil
 		redirect_to("/")
   end
@@ -147,13 +136,12 @@ class AccountsController < ApplicationController
       login = params[:account]
       if login[:User] && login[:Pass]
         # Params are Good
-        encrypted_user = Account.hashed_user(login[:User])
-        if (Account.account_exists(encrypted_user))
+        if (Account.account_exists(login[:User]))
           # Account exists for that Username
-          if (Account.pass_is_good(login[:Pass],encrypted_user))
-            Account.where(:HashedUser => encrypted_user).destroy_all
-            Onion.where(:HashedUser => encrypted_user).destroy_all
-            Session.where(:HashedUser => encrypted_user).destroy_all
+          if (Account.pass_is_good(login[:Pass],login[:User]))
+            Account.where(:User => login[:User]).destroy_all
+            Onion.where(:User => login[:User]).destroy_all
+            Session.where(:User => login[:User]).destroy_all
             redirect_to('/?Deleted=true')
           else
             # User&Pass Mismatch

@@ -4,11 +4,10 @@ class OnionsController < ApplicationController
 
 	def index
 		@onions = nil
-		if session[:SessionKey] && session[:UserKey]
-			user_hash = Session.user_hash_for_session(session[:SessionKey])
-			if user_hash
-				@onions = Onion.where(:HashedUser => Session.user_hash_for_session(session[:SessionKey])).order("id")
-				@onions = Onion.decrypted_onions_with_key(@onions,session[:UserKey])
+		if session[:SessionKey]
+			username = Session.username_for_session(session[:SessionKey])
+			if username
+				@onions = Onion.where(:User => username).order("id")
 				respond_with({:error => "Unauthorized Access"}.as_json, :location => "/")
 			else
 				redirect_to("/")
@@ -25,30 +24,24 @@ class OnionsController < ApplicationController
 
 
 	def create
-		if params[:onion] && session[:SessionKey] && session[:UserKey]
+		if params[:onion] && session[:SessionKey]
 			onion = params[:onion]
-			@user_hash = Session.user_hash_for_session(session[:SessionKey])
-			if @user_hash
-        onionTitle = onion[:Title]
-        onionInfo = onion[:Info]
-				eTitle = Onion.aes256_encrypt(session[:UserKey], (onionTitle.length>75 ? onionTitle[0..74] : onionTitle))
-				eTitle = Base64.encode64(eTitle)
-				eInfo = Onion.aes256_encrypt(session[:UserKey], (onionInfo.length>800 ? onionInfo[0..799] : onionInfo))
-				eInfo = Base64.encode64(eInfo)
+			@username = Session.username_for_session(session[:SessionKey])
+			if @username
 				if params[:Id]
 					# Edit Onion
 					@edit_onion = Onion.find(params[:Id])
-          if @edit_onion.HashedUser == @user_hash
-            @edit_onion.HashedTitle = eTitle
-            @edit_onion.HashedInfo = eInfo
+          if @edit_onion.User == @username
+            @edit_onion.Title = onion[:Title]
+            @edit_onion.Info = onion[:Info]
             @edit_onion.save
           end
         else
           # New Onion
-					@new_onion = Onion.create(:HashedUser => @user_hash, :HashedTitle => eTitle, :HashedInfo => eInfo)
+					@new_onion = Onion.create(:User => @username, :Title => onion[:Title], :Info => onion[:Info])
 				end
 				respond_with({:error => "Unauthorized Access"}.as_json, :location => "/onions")
-				session[:SessionKey] = Session.new_session(@user_hash)
+				session[:SessionKey] = Session.new_session(@username)
 			else
 				respond_with({:error => "Unauthorized Access"}.as_json, :location => "/")
 			end
@@ -65,10 +58,10 @@ class OnionsController < ApplicationController
 
 	def getAllOnions
 		if params[:SessionKey]
-			@user_hash = Session.user_hash_for_session(params[:SessionKey])
-			if @user_hash
-				@onions = Onion.where(:HashedUser => @user_hash)
-				respond_with({:Onions => @onions, :SessionKey => Session.new_session(@user_hash)}.as_json, :location => nil)
+			@username = Session.username_for_session(params[:SessionKey])
+			if @username
+				@onions = Onion.where(:User => @username)
+				respond_with({:Onions => @onions, :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
 			else
 				respond_with({:error => "No User for Session"}.as_json, :location => nil)
 			end
@@ -80,10 +73,10 @@ class OnionsController < ApplicationController
 
 	def addOnion
 		if params[:SessionKey]
-			@user_hash = Session.user_hash_for_session(params[:SessionKey])
-			if @user_hash
-				@onion = Onion.create(:HashedUser => @user_hash, :HashedTitle => params[:HashedTitle], :HashedInfo => params[:HashedInfo])
-				respond_with({:NewOnion => @onion, :SessionKey => Session.new_session(@user_hash)}.as_json, :location => nil)
+			@username = Session.username_for_session(params[:SessionKey])
+			if @username
+				@onion = Onion.create(:User => @username, :Title => params[:Title], :Info => params[:Info])
+				respond_with({:NewOnion => @onion, :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
 			else
 				respond_with({:error => "No User for Session"}.as_json, :location => nil)
 			end
@@ -95,14 +88,14 @@ class OnionsController < ApplicationController
 
 	def editOnion
 		if params[:SessionKey]
-			@user_hash = Session.user_hash_for_session(params[:SessionKey])
-			if @user_hash
+			@username = Session.username_for_session(params[:SessionKey])
+			if @username
 				@onion = Onion.find(params[:Id])
-        if @onion.HashedUser == @user_hash
-          @onion.HashedTitle = params[:HashedTitle]
-          @onion.HashedInfo = params[:HashedInfo]
+        if @onion.User == @username
+          @onion.Title = params[:Title]
+          @onion.Info = params[:Info]
           if @onion.save
-            respond_with({:Status => "Success", :SessionKey => Session.new_session(@user_hash)}.as_json, :location => nil)
+            respond_with({:Status => "Success", :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
           else
             respond_with({:error => "Onion failed to Save."}.as_json, :location => nil)
           end
@@ -120,12 +113,12 @@ class OnionsController < ApplicationController
 
 	def delete_onion
 		if params[:SessionKey]
-			@user_hash = Session.user_hash_for_session(params[:SessionKey])
-			if @user_hash
+			@username = Session.username_for_session(params[:SessionKey])
+			if @username
 				@onion = Onion.find(params[:Id])
-        if @onion.HashedUser == @user_hash
+        if @onion.User == @username
           @onion.destroy
-          respond_with({:Status => "Success", :SessionKey => Session.new_session(@user_hash)}.as_json, :location => nil)
+          respond_with({:Status => "Success", :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
         else
           respond_with({:error => "No User for Session"}.as_json, :location => nil)
         end
@@ -140,12 +133,12 @@ class OnionsController < ApplicationController
 
 	def deleteOnionWeb
 		if session[:SessionKey]
-			userHash = Session.user_hash_for_session(session[:SessionKey])
-			if userHash && params[:OnionId]
+			username = Session.username_for_session(session[:SessionKey])
+			if username && params[:OnionId]
 				@onion = Onion.find(params[:OnionId])
-				if @onion.HashedUser == userHash
+				if @onion.User == username
 					@onion.destroy
-					session[:SessionKey] = Session.new_session(userHash)
+					session[:SessionKey] = Session.new_session(username)
 					redirect_to("/onions")
 				else
 					# No Permission

@@ -39,8 +39,8 @@
   	  		<%= form_tag do %>
       			<div class="onion">
       				<div class="onion-container">
-      					<div class="onion-title"><%= text_field "onion", "Title", {"placeholder" => "Title", "class" => "w-input", "type" => "text", "value" => onion.HashedTitle, :maxlength => 75} %></div>
-        				<div class="onion-info"><%= text_area "onion", "Info", {"placeholder" => "Info", "class" => "w-input", "type" => "text", "value" => onion.HashedInfo, "size" => "30x20", :id => 'onion_area', :maxlength => 800} %></div>
+      					<div class="onion-title"><%= text_field "onion", "Title", {"placeholder" => "Title", "class" => "w-input", "type" => "text", "value" => onion.Title, :maxlength => 75} %></div>
+        				<div class="onion-info"><%= text_area "onion", "Info", {"placeholder" => "Info", "class" => "w-input", "type" => "text", "value" => onion.Info, "size" => "30x20", :id => 'onion_area', :maxlength => 800} %></div>
         				<div class="onion-links">
         					<div class="leftLink"><%= submit_tag("SAVE", :class=>'purple linkbutton') %></div>
                             <div class="rightLink"><a href=<%= "/deleteOnion?OnionId=" + onion.id.to_s %> class="purple linkbutton">DELETE</a></div>
