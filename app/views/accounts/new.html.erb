@@ -1,4 +1,4 @@
-<%= form_tag do %>
+<%= form_tag({}, {:id => "user-form"}) do %>
 	<div class="login-box">
 		<a href="/"><%= image_tag 'logo.svg', {:width => 80, :height => 80} %></a>
 		<h1>Onions<span class="io">.io</span></h1>
@@ -10,10 +10,10 @@
         <% end %>
 		<div class="form-container">
 			<div class="form-email">
-				<%= text_field 'register', 'User', {:placeholder => 'Username', :autofocus => "", :class => "w-input", :type => "text"} %>
+				<%= text_field 'register', 'User', {:id => 'user', :placeholder => 'Username', :autofocus => "", :class => "w-input", :type => "text"} %>
 			</div>
 			<div class="form-email">
-				<%= text_field 'register', 'Pass', {:placeholder => 'Password', :class => 'w-input', :type => 'password'} %>
+				<%= text_field 'register', 'Pass', {:id => 'pass', :placeholder => 'Password', :class => 'w-input', :type => 'password'} %>
 			</div>
             <div class="form-email">
                 <%= text_field 'register', 'BetaCode', {:placeholder => 'Beta Code', :class => 'w-input', :type => 'text'} %>

@@ -17,11 +17,11 @@
 
 	<!-- Create A New Onion -->
 	<div class="onion-create">
-		<%= form_tag do %>
+		<%= form_tag({}, {:id => "create-onion"}) do %>
       		<div class="onion">
       			<div class="onion-container">
-      				<div class="onion-title"><%= text_field "onion", "Title", {"placeholder" => "New Onion Title", "class" => "w-input", "type" => "text", :maxlength => 75} %></div>
-        			<div class="onion-info"><%= text_area "onion", "Info", {"placeholder" => "New Onion Info", "class" => "w-input", "type" => "text", "size" => "30x20", :id => 'onion_area', :value => '', :maxlength => 800} %></div>
+      				<div class="onion-title"><%= text_field "onion", "Title", {:id => 'new-title', "placeholder" => "New Onion Title", "class" => "w-input", "type" => "text", :maxlength => 75} %></div>
+        			<div class="onion-info"><%= text_area "onion", "Info", {"placeholder" => "New Onion Info", "class" => "w-input", "type" => "text", "size" => "30x20", :id => 'new-info', :value => '', :maxlength => 800} %></div>
       			</div>
       			<%= submit_tag("CREATE ONION", :class=>"button") %>
       			<!-- Divider -->
@@ -36,11 +36,11 @@
 	<!-- Show Onions -->
 	<% if @onions %>
 		<% @onions.each do |onion| %>
-  	  		<%= form_tag do %>
+  	  		<%= form_tag({}, {:id => "edit-onion-#{onion.id}"}) do %>
       			<div class="onion">
       				<div class="onion-container">
-      					<div class="onion-title"><%= text_field "onion", "Title", {"placeholder" => "Title", "class" => "w-input", "type" => "text", "value" => onion.Title, :maxlength => 75} %></div>
-        				<div class="onion-info"><%= text_area "onion", "Info", {"placeholder" => "Info", "class" => "w-input", "type" => "text", "value" => onion.Info, "size" => "30x20", :id => 'onion_area', :maxlength => 800} %></div>
+      					<div class="onion-title"><%= text_field "onion", "Title", {:id => "edit-title-#{onion.id}", "placeholder" => "Title", "class" => "w-input", "type" => "text", "value" => onion.Title, :maxlength => 75} %></div>
+        				<div class="onion-info"><%= text_area "onion", "Info", {"placeholder" => "Info", "class" => "w-input", "type" => "text", "value" => onion.Info, "size" => "30x20", :id => "edit-info-#{onion.id}", :maxlength => 800} %></div>
         				<div class="onion-links">
         					<div class="leftLink"><%= submit_tag("SAVE", :class=>'purple linkbutton') %></div>
                             <div class="rightLink"><a href=<%= "/deleteOnion?OnionId=" + onion.id.to_s %> class="purple linkbutton">DELETE</a></div>
