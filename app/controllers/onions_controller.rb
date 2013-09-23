@@ -41,7 +41,6 @@ class OnionsController < ApplicationController
 					@new_onion = Onion.create(:User => @username, :Title => onion[:Title], :Info => onion[:Info])
 				end
 				respond_with({:error => "Unauthorized Access"}.as_json, :location => "/onions")
-				session[:SessionKey] = Session.new_session(@username)
 			else
 				respond_with({:error => "Unauthorized Access"}.as_json, :location => "/")
 			end
@@ -61,7 +60,7 @@ class OnionsController < ApplicationController
 			@username = Session.username_for_session(params[:SessionKey])
 			if @username
 				@onions = Onion.where(:User => @username)
-				respond_with({:Onions => @onions, :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
+				respond_with({:Onions => @onions}.as_json, :location => nil)
 			else
 				respond_with({:error => "No User for Session"}.as_json, :location => nil)
 			end
@@ -76,7 +75,7 @@ class OnionsController < ApplicationController
 			@username = Session.username_for_session(params[:SessionKey])
 			if @username
 				@onion = Onion.create(:User => @username, :Title => params[:Title], :Info => params[:Info])
-				respond_with({:NewOnion => @onion, :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
+				respond_with({:NewOnion => @onion}.as_json, :location => nil)
 			else
 				respond_with({:error => "No User for Session"}.as_json, :location => nil)
 			end
@@ -95,7 +94,7 @@ class OnionsController < ApplicationController
           @onion.Title = params[:Title]
           @onion.Info = params[:Info]
           if @onion.save
-            respond_with({:Status => "Success", :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
+            respond_with({:Status => "Success"}.as_json, :location => nil)
           else
             respond_with({:error => "Onion failed to Save."}.as_json, :location => nil)
           end
@@ -118,7 +117,7 @@ class OnionsController < ApplicationController
 				@onion = Onion.find(params[:Id])
         if @onion.User == @username
           @onion.destroy
-          respond_with({:Status => "Success", :SessionKey => Session.new_session(@username)}.as_json, :location => nil)
+          respond_with({:Status => "Success"}.as_json, :location => nil)
         else
           respond_with({:error => "No User for Session"}.as_json, :location => nil)
         end
@@ -138,7 +137,6 @@ class OnionsController < ApplicationController
 				@onion = Onion.find(params[:OnionId])
 				if @onion.User == username
 					@onion.destroy
-					session[:SessionKey] = Session.new_session(username)
 					redirect_to("/onions")
 				else
 					# No Permission
